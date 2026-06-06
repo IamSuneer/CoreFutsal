@@ -1,40 +1,19 @@
-﻿using System.ComponentModel.DataAnnotations;
+namespace CoreFutsal.Models;
 
-namespace CoreFutsal.Models
+public class Team
 {
-    public class Team
-    {
-        public Guid TeamId { get; set; }
+    public Guid TeamId { get; set; }
+    public Guid OwnerUserId { get; set; }
+    public string TeamName { get; set; } = null!;
+    public string Abbreviation { get; set; } = null!;
+    public string? Description { get; set; }
+    public string Address { get; set; } = null!;
+    public string? LogoUrl { get; set; }
+    public bool IsActive { get; set; } = true;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        [Required]
-        [Display(Name = "Team Name")]
-        [StringLength(30, MinimumLength = 4)]
-        public string TeamName { get; set; }
-
-        [Required]
-        [StringLength(3, MinimumLength =2)]
-        public string Abbreviations{ get; set; }
-
-        public string? Image { get; set; }
-
-        [StringLength(50, MinimumLength = 5)]
-        public string? TeamDescription { get; set; }
-
-        [Required]
-        public string TeamAddress { get; set; }
-
-        public bool Status { get; set; } = true;
-
-        [Required]
-        [Range(1, 9)]
-        public ICollection<Player>? Players { get; set; }
-
-        public int PlayerNumbers
-        {
-            get
-            {
-                return Players.Count();
-            }
-        }
-    }
+    public User Owner { get; set; } = null!;
+    public ICollection<TeamMember> Members { get; set; } = [];
+    public ICollection<TeamStaff> Staff { get; set; } = [];
 }

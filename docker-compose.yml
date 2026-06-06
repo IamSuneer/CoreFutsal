@@ -1,0 +1,161 @@
+services:
+
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      SA_PASSWORD: "CoreFutsal_Dev@2024"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqldata:/var/opt/mssql
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools18/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "CoreFutsal_Dev@2024", "-Q", "SELECT 1", "-C"]
+      interval: 10s
+      retries: 10
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 5
+
+  gateway:
+    build:
+      context: .
+      dockerfile: src/Gateway/CoreFutsal.Gateway/Dockerfile
+    ports:
+      - "5000:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      retries: 3
+    depends_on:
+      - auth
+      - profile
+      - team
+      - stadium
+      - match
+
+  auth:
+    build:
+      context: .
+      dockerfile: src/Services/CoreFutsal.Auth/Dockerfile
+    environment:
+      ConnectionStrings__futsalConn: "Server=sqlserver;Database=FutsalDatabase;User Id=sa;Password=CoreFutsal_Dev@2024;TrustServerCertificate=True"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "CoreFutsal"
+      Jwt__Audience: "CoreFutsalClient"
+      Jwt__AccessTokenExpiryMinutes: "30"
+      Jwt__RefreshTokenExpiryDays: "7"
+      Redis__ConnectionString: "redis:6379"
+      ASPNETCORE_URLS: "http://+:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  profile:
+    build:
+      context: .
+      dockerfile: src/Services/CoreFutsal.Profile/Dockerfile
+    environment:
+      ConnectionStrings__futsalConn: "Server=sqlserver;Database=FutsalDatabase;User Id=sa;Password=CoreFutsal_Dev@2024;TrustServerCertificate=True"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "CoreFutsal"
+      Jwt__Audience: "CoreFutsalClient"
+      Jwt__AccessTokenExpiryMinutes: "30"
+      Redis__ConnectionString: "redis:6379"
+      ASPNETCORE_URLS: "http://+:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  team:
+    build:
+      context: .
+      dockerfile: src/Services/CoreFutsal.Team/Dockerfile
+    environment:
+      ConnectionStrings__futsalConn: "Server=sqlserver;Database=FutsalDatabase;User Id=sa;Password=CoreFutsal_Dev@2024;TrustServerCertificate=True"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "CoreFutsal"
+      Jwt__Audience: "CoreFutsalClient"
+      Jwt__AccessTokenExpiryMinutes: "30"
+      Redis__ConnectionString: "redis:6379"
+      ASPNETCORE_URLS: "http://+:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  stadium:
+    build:
+      context: .
+      dockerfile: src/Services/CoreFutsal.Stadium/Dockerfile
+    environment:
+      ConnectionStrings__futsalConn: "Server=sqlserver;Database=FutsalDatabase;User Id=sa;Password=CoreFutsal_Dev@2024;TrustServerCertificate=True"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "CoreFutsal"
+      Jwt__Audience: "CoreFutsalClient"
+      Jwt__AccessTokenExpiryMinutes: "30"
+      Redis__ConnectionString: "redis:6379"
+      ASPNETCORE_URLS: "http://+:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  match:
+    build:
+      context: .
+      dockerfile: src/Services/CoreFutsal.Match/Dockerfile
+    environment:
+      ConnectionStrings__futsalConn: "Server=sqlserver;Database=FutsalDatabase;User Id=sa;Password=CoreFutsal_Dev@2024;TrustServerCertificate=True"
+      Jwt__Key: "${JWT_KEY}"
+      Jwt__Issuer: "CoreFutsal"
+      Jwt__Audience: "CoreFutsalClient"
+      Jwt__AccessTokenExpiryMinutes: "30"
+      Redis__ConnectionString: "redis:6379"
+      ASPNETCORE_URLS: "http://+:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  sqldata:

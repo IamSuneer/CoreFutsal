@@ -1,56 +1,87 @@
-﻿using CoreFutsal.Models;
-using CoreFutsal.Models.ViewModels;
-using CoreFutsal.Service;
+using CoreFutsal.DTOs.Teams;
+using CoreFutsal.Extensions;
+using CoreFutsal.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
 
-namespace CoreFutsal.Controllers
+namespace CoreFutsal.Controllers;
+
+[ApiController]
+[Route("api/teams")]
+[Authorize]
+public class TeamsController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    [Authorize]
-    public class TeamsController : ControllerBase
+    private readonly ITeamService _teams;
+
+    public TeamsController(ITeamService teams) => _teams = teams;
+
+    [HttpGet]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetAll([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
     {
-        private readonly ITeamService teamService;
+        if (page < 1) page = 1;
+        if (pageSize < 1 || pageSize > 100) pageSize = 20;
+        return Ok(await _teams.GetAllAsync(page, pageSize, ct));
+    }
 
-        public TeamsController(ITeamService teamService)
-        {
-            this.teamService = teamService;
-        }
-        // GET: api/<TeamsController>
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Team>>> Get()
-        {
-            return await Task.FromResult(this.teamService.GetAllTeams());
-        }
+    [HttpGet("{id:guid}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
+        => Ok(await _teams.GetByIdAsync(id, ct));
 
-        // GET api/<TeamsController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
-        {
-            return "value";
-        }
+    [HttpPost]
+    [Authorize(Roles = "TeamOwner")]
+    public async Task<IActionResult> Create(CreateTeamDto dto, CancellationToken ct)
+    {
+        var team = await _teams.CreateAsync(User.GetUserId(), dto, ct);
+        return CreatedAtAction(nameof(GetById), new { id = team.TeamId }, team);
+    }
 
-        // POST api/<TeamsController>
-        [HttpPost]
-        public async Task<ActionResult<TeamRegisterViewModel>> Post(TeamRegisterViewModel model)
-        {
-            this.teamService.AddTeam(model, User.Claims.ToArray()[3].Value);
-            return await Task.FromResult(model);
-        }
+    [HttpPut("{id:guid}")]
+    [Authorize(Roles = "TeamOwner")]
+    public async Task<IActionResult> Update(Guid id, UpdateTeamDto dto, CancellationToken ct)
+    {
+        await _teams.UpdateAsync(User.GetUserId(), id, dto, ct);
+        return NoContent();
+    }
 
-        // PUT api/<TeamsController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
+    [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "TeamOwner")]
+    public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
+    {
+        await _teams.DeleteAsync(User.GetUserId(), id, ct);
+        return NoContent();
+    }
 
-        // DELETE api/<TeamsController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
-        }
+    [HttpDelete("{id:guid}/members/{playerId:guid}")]
+    [Authorize(Roles = "TeamOwner")]
+    public async Task<IActionResult> RemoveMember(Guid id, Guid playerId, CancellationToken ct)
+    {
+        await _teams.RemoveMemberAsync(User.GetUserId(), id, playerId, ct);
+        return NoContent();
+    }
+
+    [HttpDelete("{id:guid}/staff/{staffId:guid}")]
+    [Authorize(Roles = "TeamOwner")]
+    public async Task<IActionResult> RemoveStaff(Guid id, Guid staffId, CancellationToken ct)
+    {
+        await _teams.RemoveStaffAsync(User.GetUserId(), id, staffId, ct);
+        return NoContent();
+    }
+
+    [HttpPut("{id:guid}/captain")]
+    [Authorize(Roles = "TeamOwner")]
+    public async Task<IActionResult> SetCaptain(Guid id, SetCaptainDto dto, CancellationToken ct)
+    {
+        await _teams.SetCaptainAsync(User.GetUserId(), id, dto.PlayerId, ct);
+        return NoContent();
+    }
+
+    [HttpPut("{id:guid}/members/jersey")]
+    [Authorize(Roles = "TeamOwner")]
+    public async Task<IActionResult> UpdateJersey(Guid id, UpdateMemberJerseyDto dto, CancellationToken ct)
+    {
+        await _teams.UpdateMemberJerseyAsync(User.GetUserId(), id, dto, ct);
+        return NoContent();
     }
 }

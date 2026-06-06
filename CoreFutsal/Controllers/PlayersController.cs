@@ -1,60 +1,51 @@
-﻿using CoreFutsal.Models;
-using CoreFutsal.Models.DTOs;
-using CoreFutsal.Service;
+using CoreFutsal.DTOs.Players;
+using CoreFutsal.Extensions;
+using CoreFutsal.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
-namespace CoreFutsal.Controllers
+namespace CoreFutsal.Controllers;
+
+[ApiController]
+[Route("api/players")]
+[Authorize]
+public class PlayersController : ControllerBase
 {
-    [Route("api/[controller]")]
-    [ApiController]
-    [Authorize]
-    public class PlayersController : ControllerBase
+    private readonly IPlayerService _players;
+
+    public PlayersController(IPlayerService players) => _players = players;
+
+    [HttpGet("marketplace")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetMarketplace([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
     {
-        private readonly IPlayerService playerService;
+        if (page < 1) page = 1;
+        if (pageSize < 1 || pageSize > 100) pageSize = 20;
+        var players = await _players.GetMarketplaceAsync(page, pageSize, ct);
+        return Ok(players);
+    }
 
-        public PlayersController(IPlayerService playerService)
-        {
-            this.playerService = playerService;
-        }
+    [HttpGet("{id:guid}")]
+    [AllowAnonymous]
+    public async Task<IActionResult> GetById(Guid id, CancellationToken ct)
+    {
+        var player = await _players.GetByIdAsync(id, ct);
+        return Ok(player);
+    }
 
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Player>>> Get()
-        {
-            return await Task.FromResult(this.playerService.GetAllPlayers());
-        }
+    [HttpPut("me")]
+    [Authorize(Roles = "Player")]
+    public async Task<IActionResult> UpdateProfile(UpdatePlayerDto dto, CancellationToken ct)
+    {
+        await _players.UpdateAsync(User.GetUserId(), dto, ct);
+        return NoContent();
+    }
 
-        [HttpPut("{id}")]
-        public async Task<ActionResult<PlayerEditDTO>> Put(string id, PlayerEditDTO model)
-        {
-            var playerId = User.Claims.ToList()[3].Value;
-            if (id != playerId)
-            {
-                return BadRequest();
-            }
-            try
-            {
-                this.playerService.UpdatePlayer(model, Guid.Parse(playerId));
-                return await Task.FromResult(model);
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!PlayerExists(Guid.Parse(playerId)))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-        }
-
-        private bool PlayerExists(Guid id)
-        {
-            return this.playerService.CheckPlayer(id);
-        }
+    [HttpDelete("me")]
+    [Authorize(Roles = "Player")]
+    public async Task<IActionResult> DeleteProfile(CancellationToken ct)
+    {
+        await _players.DeleteAsync(User.GetUserId(), ct);
+        return NoContent();
     }
 }

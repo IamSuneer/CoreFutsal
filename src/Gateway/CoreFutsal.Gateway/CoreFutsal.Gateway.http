@@ -1,0 +1,6 @@
+@CoreFutsal.Gateway_HostAddress = http://localhost:5027
+
+GET {{CoreFutsal.Gateway_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

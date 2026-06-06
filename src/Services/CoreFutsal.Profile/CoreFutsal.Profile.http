@@ -1,0 +1,6 @@
+@CoreFutsal.Profile_HostAddress = http://localhost:5100
+
+GET {{CoreFutsal.Profile_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

@@ -1,0 +1,6 @@
+@CoreFutsal.Match_HostAddress = http://localhost:5058
+
+GET {{CoreFutsal.Match_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

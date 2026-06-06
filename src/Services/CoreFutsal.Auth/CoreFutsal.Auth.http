@@ -1,0 +1,6 @@
+@CoreFutsal.Auth_HostAddress = http://localhost:5244
+
+GET {{CoreFutsal.Auth_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
